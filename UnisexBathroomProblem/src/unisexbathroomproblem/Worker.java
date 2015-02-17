@@ -10,7 +10,6 @@ import java.util.logging.Logger;
  */
 public class Worker implements Runnable {
 
-    long arrivedTime;
     int bathroomTime;
     private Bathroom bathroom;
     private Random rand = new Random();
@@ -29,7 +28,7 @@ public class Worker implements Runnable {
         bathroomTime = rand.nextInt(3000);
 
         try {
-            bathroom.useBathroom(this);
+           // bathroom.useBathroom(this);
             System.out.println("Worker using bathroom for: " + bathroomTime / 1000 + " sek");
             Thread.sleep(bathroomTime);
             System.out.println("Worker done at bathroom!");
@@ -49,7 +48,6 @@ public class Worker implements Runnable {
             Thread.sleep(workTime);
 
             bathroom.placeInQueue(this);
-            arrivedTime = System.nanoTime();
 
         } catch (InterruptedException ex) {
             ex.printStackTrace();

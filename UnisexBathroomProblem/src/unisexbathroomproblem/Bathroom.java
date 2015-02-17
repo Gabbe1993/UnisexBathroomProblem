@@ -17,8 +17,12 @@ public class Bathroom {
 
     private ReentrantLock manQueueLock = new ReentrantLock();
     private ReentrantLock womanQueueLock = new ReentrantLock();
+    private ReentrantLock semLock = new ReentrantLock();
 
-    static Semaphore sem = new Semaphore(1000000000);
+    boolean activeMan;
+
+    static final int DEFAULT_MAX_LIMIT = 1000000000;
+    static GenderSemaphore sem = new GenderSemaphore(DEFAULT_MAX_LIMIT);
 
     public Bathroom(int workers) {
         for (int i = 0; i < workers; i++) {
@@ -27,67 +31,58 @@ public class Bathroom {
             Thread womanT = new Thread(new Woman(this));
             womanT.start();
         }
-        calculateNext();
+        while (true) {
+            try {
+                Thread.sleep(3000);
+                calculateNext();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(Bathroom.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
+    //TODO: se till så att andra könet får gå in när alla lämnat
+    //hämta alla semaphorerer, varje har enskild
     void useBathroom(Worker worker) {
         try {
-            sem.acquire();
-            System.out.println("Bathroom occupied ...");
+            semLock.lock();
+            sem.acquire(worker);
 
-            int longestBt = 0, tempBt = 0;
-
-            tempBt = worker.bathroomTime;
-
-            if (tempBt > longestBt) {
-                longestBt = tempBt;
+            if (worker instanceof Man) {
+                activeMan = true;
+            } else {
+                activeMan = false;
             }
-            Thread.sleep(tempBt);
 
-            sem.release();
-        } catch (Exception e) {
-            e.printStackTrace();
+            Thread.sleep(worker.bathroomTime);
 
-            System.out.println("Bathroom avaible");
+            sem.release(worker);
+            semLock.unlock();
 
-            calculateNext();
-
+            // calculateNext();
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
         }
-
     }
 
+    //FIX FAIR CALCULATION fulaste metoden EU dno låååssss??,,mmmmmmmmmmmmmmmm
     private void calculateNext() {
-
-        if (manQueue.getFirst().arrivedTime < womanQueue.getFirst().arrivedTime) {
-            manQueue.getFirst().useBathroom();
-        } else {
-            womanQueue.getFirst().useBathroom();
+        if (sem.women == 0 && sem.men == 0) {
+            useBathroom(manQueue.getFirst());
+            manQueue.removeFirst();
+        } else if (sem.women == 0 && sem.men != 0) {
+            useBathroom(manQueue.getFirst());
+            manQueue.removeFirst();
+        } else if (sem.women != 0 && sem.men == 0) {
+            useBathroom(womanQueue.getFirst());
+            womanQueue.removeFirst();
+        } else if (sem.women != 0 && sem.men != 0 && activeMan) {
+            useBathroom(womanQueue.getFirst());
+            womanQueue.removeFirst();
+        } else if (sem.women != 0 && sem.men != 0 && !activeMan) {
+            useBathroom(manQueue.getFirst());
+            manQueue.removeFirst();
         }
-
-        //      long manArrived = 0, womanArrived = 0, tempArrived = 0;
-//        for (int i = 0; i < manQueue.size(); i++) {
-//            tempArrived = manQueue.get(i).arrivedTime;
-//            if (tempArrived < manArrived) {
-//                manArrived = tempArrived;
-//            }
-//        }
-//        tempArrived = 0;
-//        for (int i = 0; i < womanQueue.size(); i++) {
-//            tempArrived = womanQueue.get(i).arrivedTime;
-//            if (tempArrived < womanArrived) {
-//                womanArrived = tempArrived;
-//            }
-//        }
-//        if (womanArrived < manArrived) {
-//            for (Worker womanQueue1 : womanQueue) {
-//                womanQueue1.useBathroom();
-//            }
-//            useBathroom(womanQueue);
-//        } else {
-//            for (Worker manQueue1 : manQueue) {
-//                manQueue1.useBathroom();
-//            }
-//            useBathroom(manQueue);
     }
 
     void placeInQueue(Worker person) {
