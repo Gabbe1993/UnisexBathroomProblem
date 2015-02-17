@@ -6,7 +6,7 @@ package unisexbathroomproblem;
  */
 public class Main {
     public static void main(String[] args) {
-        Bathroom br = new Bathroom();
+        Bathroom br = new Bathroom(3);
     }
     
 }

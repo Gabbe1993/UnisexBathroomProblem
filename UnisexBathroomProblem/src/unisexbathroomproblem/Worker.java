@@ -8,43 +8,52 @@ import java.util.logging.Logger;
  *
  * @author Gabriel
  */
-public class Worker {
+public class Worker implements Runnable {
 
-    long arrivedTime, workTime, bathroomTime;
-    Bathroom bathroom;
-    Random rand = new Random();
+    long arrivedTime;
+    int bathroomTime;
+    private Bathroom bathroom;
+    private Random rand = new Random();
 
     public Worker(Bathroom bathroom) {
         this.bathroom = bathroom;
+    }
 
-        this.arrivedTime = System.currentTimeMillis();
-        this.workTime = rand.nextInt();
-        this.bathroomTime = rand.nextInt();
-        
+    @Override
+    public void run() {
+        System.out.println("Started worker");
         work();
     }
 
     public void useBathroom() {
+        bathroomTime = rand.nextInt(3000);
+
         try {
+            bathroom.useBathroom(this);
+            System.out.println("Worker using bathroom for: " + bathroomTime / 1000 + " sek");
             Thread.sleep(bathroomTime);
-            bathroomTime = rand.nextLong();
+            System.out.println("Worker done at bathroom!");
+
             work();
         } catch (InterruptedException ex) {
-            Logger.getLogger(Worker.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         }
 
     }
 
-    public void work() {
+    private void work() {
+        int workTime = rand.nextInt(10000);
+
         try {
+            System.out.println("Worker working for: " + workTime / 1000 + " sek");
             Thread.sleep(workTime);
+
             bathroom.placeInQueue(this);
+            arrivedTime = System.nanoTime();
+
         } catch (InterruptedException ex) {
-            Logger.getLogger(Worker.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         }
     }
-    
-    public void setBathroomTime(long bathroomTime) {
-        this.bathroomTime = bathroomTime;
-    }
+
 }
