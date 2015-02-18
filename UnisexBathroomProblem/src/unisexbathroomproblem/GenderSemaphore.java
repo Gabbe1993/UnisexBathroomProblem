@@ -8,31 +8,31 @@ import java.util.concurrent.Semaphore;
  */
 public class GenderSemaphore extends Semaphore {
 
-    int men = 0;
-    int women = 0;
+    static int men = 0;
+    static int women = 0;
 
     public GenderSemaphore(int num) {
         super(num);
     }
 
     public void acquire(Worker worker) {
+        if (worker instanceof Man) {
+            men++;
+        } else {
+            women++;
+        }
         try {
             super.acquire();
-            if (worker instanceof Man) {
-                men++;
-            } else {
-                women++;
-            }
         } catch (InterruptedException ex) {
         }
     }
 
     public void release(Worker worker) {
-        super.release();
         if (worker instanceof Man) {
             men--;
         } else {
             women--;
         }
+        super.release();
     }
 }

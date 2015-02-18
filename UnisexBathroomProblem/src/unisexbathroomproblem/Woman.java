@@ -6,8 +6,8 @@ package unisexbathroomproblem;
  */
 public class Woman extends Worker {
 
-    public Woman(Bathroom bathroom) {
-        super(bathroom);
+    public Woman(Bathroom bathroom, int id) {
+        super(bathroom, id, 'F');
     }
     
 }

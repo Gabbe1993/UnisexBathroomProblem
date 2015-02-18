@@ -10,45 +10,52 @@ import java.util.logging.Logger;
  */
 public class Worker implements Runnable {
 
-    int bathroomTime;
+    int bathroomTime, id;
+    String info;
     private Bathroom bathroom;
     private Random rand = new Random();
 
-    public Worker(Bathroom bathroom) {
+    public Worker(Bathroom bathroom, int id, char gender) {
         this.bathroom = bathroom;
+        this.info = gender + "(" + id + ")";
     }
 
     @Override
     public void run() {
-        System.out.println("Started worker");
+        System.out.println("Started " + info);
         work();
     }
 
     public void useBathroom() {
-        bathroomTime = rand.nextInt(3000);
+        bathroomTime = rand.nextInt(10000);
+        boolean usedBathroom = false;
 
         try {
-           // bathroom.useBathroom(this);
-            System.out.println("Worker using bathroom for: " + bathroomTime / 1000 + " sek");
-            Thread.sleep(bathroomTime);
-            System.out.println("Worker done at bathroom!");
+            Bathroom.sem.acquire(this);
 
+            while (!usedBathroom) {
+                Thread.sleep(3000);
+
+                if (bathroom.allowed(this)) {
+                    usedBathroom = true;
+                    bathroom.useBathroom(this);
+                    Bathroom.sem.release(this);
+                    Thread.sleep(bathroomTime);
+                }
+            }
             work();
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
-
     }
 
     private void work() {
-        int workTime = rand.nextInt(10000);
+        int workTime = rand.nextInt(60000);
 
         try {
-            System.out.println("Worker working for: " + workTime / 1000 + " sek");
+            //System.out.println(info + " working for: " + workTime / 1000 + " sek");
             Thread.sleep(workTime);
-
-            bathroom.placeInQueue(this);
-
+            useBathroom();
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
