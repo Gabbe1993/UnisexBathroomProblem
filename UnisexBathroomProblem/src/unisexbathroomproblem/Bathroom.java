@@ -21,6 +21,7 @@ public class Bathroom {
     static GenderSemaphore sem = new GenderSemaphore(DEFAULT_MAX_LIMIT);
     static Semaphore semMenAllowed = new Semaphore(1);
     static Semaphore semBlock = new Semaphore(0);
+    private boolean allowedToEnter = true;
 
     public Bathroom(int workers) {
         for (int i = 0; i < workers; i++) {
@@ -82,9 +83,12 @@ public class Bathroom {
         } else if (semMenAllowed.availablePermits() == 0 && worker instanceof Woman) {
             //System.out.println("ACCESS DENIED for: " + worker.info);
             return false;
-        } else if (semBlock.availablePermits() == 1) { // om det finns ledig sem (lås)
-            //System.out.println("ACCESS BLOCKED for: " + worker.info);
+        } 
+        if(!allowedToEnter) {
             return false;
+//        else if (semBlock.availablePermits() == 1) { // om det finns ledig sem (lås)
+//            //System.out.println("ACCESS BLOCKED for: " + worker.info);
+//            return false;
         }
 
         return true;
@@ -105,24 +109,26 @@ public class Bathroom {
         System.out.println("sem.men = " + sem.men + " sem.women = " + sem.women);
         try {
             if (inBathroom <= 0) {
-                if (semBlock.availablePermits() < 1) {
-                    semBlock.release(); // sem++, dvs finns nu en ledig sem
-
-                    System.out.println("REALESE avaiblePermits == " + semBlock.availablePermits());
+                allowedToEnter = true;
+//                if (semBlock.availablePermits() < 1) {
+//                    semBlock.release(); // sem++, dvs finns nu en ledig sem
+//
+//                    System.out.println("REALESE avaiblePermits == " + semBlock.availablePermits());
                     System.out.println("---- OPPOSITE GENDER MAY NOW ENTER BATHROOM ----");
-                }
-            } else if (inBathroom > 0) {
-                semBlock.tryAcquire(); // sem --, dvs finns ingen ledig sem
-                System.out.println("ACCURIE avaiblePermits == " + semBlock.availablePermits());
+//                }
+            } 
+//            else if (inBathroom > 0) {
+//                semBlock.tryAcquire(); // sem --, dvs finns ingen ledig sem
+//                System.out.println("ACCURIE avaiblePermits == " + semBlock.availablePermits());
                 
-            } else if (worker instanceof Man && sem.women != 0) {
+            else if (worker instanceof Man && sem.women != 0) {
                 semMenAllowed.release();
-                //allowedToEnter = false;
+                allowedToEnter = false;
                 System.out.println("--MEN DENIED--");
 
             } else if (worker instanceof Woman && sem.men != 0) {
                 semMenAllowed.acquire();
-                //allowedToEnter = false;
+                allowedToEnter = false;
                 System.out.println("--WOMEN DENIED--");
             }
 
