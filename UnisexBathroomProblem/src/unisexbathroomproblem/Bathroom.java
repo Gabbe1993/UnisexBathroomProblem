@@ -20,8 +20,7 @@ public class Bathroom {
     static final int DEFAULT_MAX_LIMIT = 1000000000;
     static GenderSemaphore sem = new GenderSemaphore(DEFAULT_MAX_LIMIT);
     static Semaphore semMenAllowed = new Semaphore(1);
-    static Semaphore semBlock = new Semaphore(0);
-    private boolean allowedToEnter = true;
+    static Semaphore semLock = new Semaphore(1);
 
     public Bathroom(int workers) {
         for (int i = 0; i < workers; i++) {
@@ -49,7 +48,7 @@ public class Bathroom {
 
             inBathroom--;
             //semLock.release();
-            System.out.println(worker.info + " done at bathroom");
+            System.out.println(worker.info + " DONE at bathroom");
             System.out.println("Workers in bathroom = " + inBathroom);
 
             calculateAccess(worker, inBathroom);
@@ -67,30 +66,19 @@ public class Bathroom {
      * @return true if allowed to enter bathroom
      */
     public boolean allowed(Worker worker) {
-        //            try {
-        //                if (worker instanceof Man) {
-        //                    semMenAllowed.acquire();
-        //                } else {
-        //                    semMenAllowed.release();
-        //                }
-        //            } catch (InterruptedException ex) {
-        //                Logger.getLogger(Bathroom.class.getName()).log(Level.SEVERE, null, ex);
-        //            }
-        //        }
         if (semMenAllowed.availablePermits() == 1 && worker instanceof Man) {
             //System.out.println("ACCESS DENIED for: " + worker.info);
             return false;
+
         } else if (semMenAllowed.availablePermits() == 0 && worker instanceof Woman) {
             //System.out.println("ACCESS DENIED for: " + worker.info);
             return false;
-        } 
-        if(!allowedToEnter) {
-            return false;
-//        else if (semBlock.availablePermits() == 1) { // om det finns ledig sem (lås)
-//            //System.out.println("ACCESS BLOCKED for: " + worker.info);
-//            return false;
-        }
 
+        } else if (isSemLocked()) {
+            //System.out.println("ACCESS BLOCKED for: " + worker.info);
+            return false;
+        }
+        
         return true;
 
     }
@@ -109,26 +97,18 @@ public class Bathroom {
         System.out.println("sem.men = " + sem.men + " sem.women = " + sem.women);
         try {
             if (inBathroom <= 0) {
-                allowedToEnter = true;
-//                if (semBlock.availablePermits() < 1) {
-//                    semBlock.release(); // sem++, dvs finns nu en ledig sem
-//
-//                    System.out.println("REALESE avaiblePermits == " + semBlock.availablePermits());
-                    System.out.println("---- OPPOSITE GENDER MAY NOW ENTER BATHROOM ----");
-//                }
-            } 
-//            else if (inBathroom > 0) {
-//                semBlock.tryAcquire(); // sem --, dvs finns ingen ledig sem
-//                System.out.println("ACCURIE avaiblePermits == " + semBlock.availablePermits());
-                
-            else if (worker instanceof Man && sem.women != 0) {
+                unlockSem();
+
+            } else if (inBathroom > 0) {
+                lockSem();
+
+            }
+            if (worker instanceof Man && sem.women != 0) {
                 semMenAllowed.release();
-                allowedToEnter = false;
                 System.out.println("--MEN DENIED--");
 
             } else if (worker instanceof Woman && sem.men != 0) {
                 semMenAllowed.acquire();
-                allowedToEnter = false;
                 System.out.println("--WOMEN DENIED--");
             }
 
@@ -136,6 +116,44 @@ public class Bathroom {
             Logger.getLogger(Bathroom.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+    }
+
+    /**
+     * Tries to lock the semaphore. This is the same as if(semaphore == 0)
+     * semaphore++. The lock is locked when the semaphore is 1.
+     */
+    private void lockSem() {
+        if (semLock.availablePermits() == 1) {
+            try {
+                semLock.acquire();
+                System.out.println("semLock: semLock.acquire();");
+                System.out.println("semLock: availablePermits (should be 0) = " + semLock.availablePermits());
+            } catch (InterruptedException ex) {
+                Logger.getLogger(Bathroom.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+
+    /**
+     * Tries to unlock the semaphore. It is the same as if(semaphore == 1)
+     * semaphore--. The lock is unlocked when the semaphore is 0.
+     */
+    private void unlockSem() {
+        if (semLock.availablePermits() == 0) {
+            semLock.release();
+            System.out.println("unlockSem: semLock.release()");
+            System.out.println("unlockSem: availablePermits (should be 1) = " + semLock.availablePermits());
+        }
+    }
+
+    private boolean isSemLocked() {
+        if (semLock.availablePermits() == 0) {
+            System.out.println("isSemLocked: LOCKED");
+            return true;
+        } else {
+            System.out.println("isSemLocked: UNLOCKED");
+            return false;
+        }
     }
 
 }
