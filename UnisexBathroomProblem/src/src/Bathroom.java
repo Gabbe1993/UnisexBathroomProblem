@@ -22,8 +22,7 @@ public class Bathroom {
     static GenderSemaphore semGender = new GenderSemaphore(DEFAULT_MAX_LIMIT);
 
     // Binary semaphores
-    static Semaphore semMen = new Semaphore(0);
-    static Semaphore semWomen = new Semaphore(0);
+    static Semaphore semMenLock = new Semaphore(1);
     static Semaphore semBrLock = new Semaphore(1);
 
     public Bathroom(int workers) {
@@ -74,7 +73,7 @@ public class Bathroom {
             return true;
         } else if (menAllowed() && worker instanceof Man) {
             return true;
-        } else if (womenAllowed() && worker instanceof Woman) {
+        } else if (!menAllowed() && worker instanceof Woman) {
             return true;
         }
 
@@ -107,15 +106,7 @@ public class Bathroom {
     }
 
     private boolean menAllowed() {
-        if (semMen.availablePermits() == 1) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    private boolean womenAllowed() {
-        if (semWomen.availablePermits() == 1) {
+        if (semMenLock.availablePermits() == 1) {
             return true;
         } else {
             return false;
@@ -133,25 +124,20 @@ public class Bathroom {
     private void unlockForGender(Worker worker) {
         if (worker instanceof Man) {
             System.out.println("------UNLOCKING FOR MEN-------");
-            if (semMen.availablePermits() == 0) {
-                semMen.release();
+            if (semMenLock.availablePermits() == 0) {
+                semMenLock.release();
             }
-            semWomen.tryAcquire();
         } else {
             System.out.println("------UNLOCKING FOR WOMEN------");
-            semMen.tryAcquire();
-            if (semWomen.availablePermits() == 0) {
-                semWomen.release();
-            }
+            semMenLock.tryAcquire();
         }
     }
 
     private void lockForGender(Worker worker) {
         if (worker instanceof Man) {
-            semMen.tryAcquire();
-
+            semMenLock.tryAcquire();
         } else {
-            semWomen.tryAcquire();
+            semMenLock.release();
         }
     }
 

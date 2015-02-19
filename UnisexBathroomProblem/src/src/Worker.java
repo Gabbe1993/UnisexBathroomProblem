@@ -34,6 +34,7 @@ public class Worker implements Runnable {
             Bathroom.semGender.acquire(this);
 
             while (!usedBathroom) {
+                Thread.sleep(500);
                 if (bathroom.allowed(this)) {
                     usedBathroom = true;
                     bathroom.enterBathroom(this);
