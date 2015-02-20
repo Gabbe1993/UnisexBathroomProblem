@@ -111,16 +111,20 @@ public class Bathroom {
 
     private boolean menAllowed() {
         if (semMenLock.availablePermits() == 1) {
+            System.out.println("MEN ALLOWED");
             return true;
         } else {
+            System.out.println("MEN NOT ALLOWED");
             return false;
         }
     }
 
     private boolean isUnlocked() {
         if (semBrLock.availablePermits() == 1) {
+            System.out.println("BATHROOM IS UNLOCKED");
             return true;
         } else {
+            System.out.println("BATHROOM IS LOCKED");
             return false;
         }
     }
@@ -140,7 +144,9 @@ public class Bathroom {
     private void lockForGender(Worker worker) {
         if (worker instanceof Man) {
             semMenLock.tryAcquire();
+            System.out.println("LOCKING FOR MEN");
         } else {
+            System.out.println("LOCKING FOR WOMEN");
             semMenLock.release();
         }
     }
