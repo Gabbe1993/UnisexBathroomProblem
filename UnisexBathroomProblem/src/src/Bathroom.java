@@ -20,6 +20,7 @@ public class Bathroom {
 
     // Counting semaphores
     static GenderSemaphore semGender = new GenderSemaphore(DEFAULT_MAX_LIMIT);
+    static Semaphore semInBr = new Semaphore(DEFAULT_MAX_LIMIT);
 
     // Binary semaphores
     static Semaphore semMenLock = new Semaphore(1);
@@ -42,17 +43,20 @@ public class Bathroom {
      */
     void enterBathroom(Worker worker) {
         try {
-            inBathroom++;
+            //inBathroom++;
+            semInBr.acquire();
 
             System.out.println(worker.info + " using bathroom for: " + worker.bathroomTime / 1000 + " sek");
-            System.out.println("Workers in bathroom = " + inBathroom);
+            System.out.println("Workers in bathroom = " + (DEFAULT_MAX_LIMIT - semInBr.availablePermits()));
             Thread.sleep(worker.bathroomTime);
 
-            inBathroom--;
+            //inBathroom--;
+            semInBr.release();
             System.out.println(worker.info + " DONE at bathroom");
-            System.out.println("Workers in bathroom = " + inBathroom);
+            //System.out.println("Workers in bathroom = " + inBathroom);
+            System.out.println("Workers in bathroom = " + (DEFAULT_MAX_LIMIT - semInBr.availablePermits()));
 
-            leaveBathroom(worker, inBathroom);
+            leaveBathroom(worker, (DEFAULT_MAX_LIMIT - semInBr.availablePermits()));
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
@@ -85,8 +89,8 @@ public class Bathroom {
      * Calculates whether the access to the bathroom should be changed when a
      * person in leaves. The allowed gender is changed to: 1) Male allowed: if
      * there is waiting females that has acquired the semaphore and the last
-     * leaver 2) Female allowed: if there is waiting males that has
-     * acquired the semaphore and the last leaver is female
+     * leaver 2) Female allowed: if there is waiting males that has acquired the
+     * semaphore and the last leaver is female
      *
      * @param worker the worker to leave the bathroom
      */
